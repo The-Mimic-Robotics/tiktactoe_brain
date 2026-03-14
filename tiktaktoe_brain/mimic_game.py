@@ -26,6 +26,15 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 client = OpenAI(api_key="")
 
+conversation = client.conversations.create()
+CONVERSATION_ID = conversation.id
+
+# Use the exact dictionary format from your dashboard example
+MIMIC_PROMPT = {
+    "id": "pmpt_69b5a72f3b8c819491ad004531919a9b05f7f92fd2ab1d24",
+    "version": "1"
+}
+
 # --- Configuration ---
 GRID_MAPPING = """
 Here are the valid and strict board positions and their corresponding IDs:
@@ -146,18 +155,34 @@ def background_conversation_loop():
                     
                 print(f"\n[Heard in background]: {user_text}")
 
-                # LLM
-                response = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": "You are Mimic, a bimanual robot playing tic-tac-toe. Keep casual conversation to 1-2 short sentences. Be witty."},
-                        {"role": "user", "content": user_text}
-                    ]
-                )
-                ai_text = response.choices[0].message.content
+                # LLM ()
+                # response = client.chat.completions.create(
+                #     model="gpt-4o",
+                #     messages=[
+                #         {"role": "system", "content": "You are Mimic, a bimanual robot playing tic-tac-toe. Keep casual conversation to 1-2 short sentences. Be witty."},
+                #         {"role": "user", "content": user_text}
+                #     ]
+                # )
+                # ai_text = response.choices[0].message.content
                 
-                # Speak the response
+                # # Speak the response
+                # speak(ai_text)
+                
+                response = client.responses.create(
+                    prompt =MIMIC_PROMPT,
+                    conversation=CONVERSATION_ID,
+                    input=user_text,
+                    store=True
+                )
+                
+                # The output is directly available in .output_text
+                ai_text = response.output_text
                 speak(ai_text)
+
+            except Exception as e:
+                print(f"Chat error: {e}")
+
+
 
             except sr.WaitTimeoutError:
                 continue
@@ -272,7 +297,7 @@ def main():
     TURN_COLOR = "Red"
     image_filename = "current_board.png"
 
-    speak("Hello! I am Mimic, your bimanual robotic opponent. Let's play a game of Tic-Tac-Toe. So put that stupid vape aside and BREATH AIR ! Come on loser lets do it!")
+    speak("Hello! I am Mimic, your bimanual robotic opponent. Let's play a game of Tic-Tac-Toe.")
 
 
     def toggle_mute():
@@ -303,7 +328,7 @@ def main():
             if chatter_muted.is_set():
                 chatter_muted.clear() # Turn the switch OFF (Unmuted)
                 print("\n🟢 [Chatter Bot is UNMUTED]")
-                speak("My ears are open.")
+                # speak("My ears are open.")
             else:
                 chatter_muted.set()   # Turn the switch ON (Muted)
                 print("\n🔴 [Chatter Bot is MUTED]")
@@ -331,9 +356,11 @@ def main():
                     # speak(f"My turn is complete. {robot_command}")
 
                 else:
-                     speak("I had trouble generating a move. Try again.")
+                    #  speak("I had trouble generating a move. Try again.")
+                    print("!!!  Couldnt generate the move, please try again   !!!\n")
             else:
-                 speak("I couldn't see the camera feed.")
+                #  speak("I couldn't see the camera feed.")
+                print("!!!  CANT SEE CAMERA FEED   !!!\n")
         else:
             # If they press any other random key, just ignore it and re-prompt
             continue
