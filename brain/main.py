@@ -2,7 +2,6 @@ import socket
 import threading
 from openai import OpenAI
 from pynput import keyboard
-
 import config
 from mimic_voice import MimicVoice
 import mimic_vision
@@ -10,44 +9,38 @@ import utils
 
 # 1. Setup
 client = OpenAI(api_key=config.OPENAI_API_KEY)
-conv = client.conversations.create()
+# Create the conversation object to get an ID
+conv = client.conversations.create() 
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-voice = MimicVoice(client, conv.id)
+# --- FIX: Pass all 3 required arguments here ---
+voice = MimicVoice(client, conv.id, sock)
 
-# 2. PTT Keyboard Listeners
 def on_press(key):
-    if key == keyboard.Key.space:
-        voice.ptt_active.set()
+    if key == keyboard.Key.space: # Changed to Space to avoid terminal newline spam
+        if not voice.ptt_active.is_set():
+            voice.ptt_active.set()
 
 def on_release(key):
     if key == keyboard.Key.space:
         voice.ptt_active.clear()
 
-# 3. Execution
 def main():
-    # Start Voice Thread
-    threading.Thread(target=voice.conversation_loop, daemon=True).start()
+    # Start the fused loop that contains your working mic logic
+    # This runs in the background so main.py stays responsive
+    chat_thread = threading.Thread(target=voice.fused_conversation_loop, daemon=True)
+    chat_thread.start()
     
-    # Start Keyboard Listener
     listener = keyboard.Listener(on_press=on_press, on_release=on_release)
     listener.start()
 
-    voice.speak("Hello! Let's play.")
-
-    while True:
-        print("\n[ENTER] for Robot Turn | [q] quit", end="", flush=True)
-        user_key = utils.get_single_keypress()
-
-        if user_key == '\r' or user_key == '\n':
-            img = mimic_vision.capture_board_image()
-            move = mimic_vision.get_robot_move(client, img, "X", "Red")
-            if move:
-                print(f"Robot moving to {move}")
-                sock.sendto(move.encode(), (config.ROBOT_UDP_IP, config.ROBOT_UDP_PORT))
-        
-        elif user_key.lower() == 'q':
-            break
+    voice.speak("Mimic system active. Hold space to talk and show me the board.")
+    
+    try:
+        # Keep the main thread alive
+        listener.join()
+    except KeyboardInterrupt:
+        print("\nShutting down.")
 
 if __name__ == "__main__":
     main()

@@ -1,6 +1,7 @@
 import cv2
 import base64
 import re
+import time
 from config import GRID_MAPPING
 
 def rotate_and_crop(image, angle, crop_box):
@@ -26,7 +27,7 @@ def encode_image_to_base64(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def capture_board_image(save_path="current_board.png"):
-    cap = cv2.VideoCapture(2) 
+    cap = cv2.VideoCapture(8) 
     if not cap.isOpened(): return False
     
     time.sleep(1.0) 
