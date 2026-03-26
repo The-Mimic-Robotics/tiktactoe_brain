@@ -20,6 +20,12 @@ def on_press(key):
     if key == keyboard.Key.space: # Changed to Space to avoid terminal newline spam
         if not voice.ptt_active.is_set():
             voice.ptt_active.set()
+    
+    elif hasattr(key, 'char') and key.char == 'w':
+        sock.sendto("wait".encode('utf-8'), (config.ROBOT_UDP_IP, config.ROBOT_UDP_PORT))
+        
+    elif hasattr(key, 'char') and key.char == '-':
+        sock.sendto("-1".encode('utf-8'), (config.ROBOT_UDP_IP, config.ROBOT_UDP_PORT))
 
 def on_release(key):
     if key == keyboard.Key.space:

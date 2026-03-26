@@ -15,10 +15,8 @@ class MimicVoice:
         self.audio_lock = threading.Lock()
         self.ptt_active = threading.Event()
         
-        # This history list provides the 'Context' you wanted
-        self.history = [
-            {"role": "system", "content": config.FUSED_PROMPT.format(GRID_MAPPING=config.GRID_MAPPING)}
-        ]
+        # Look ma, no self.history! 
+        # The Responses API handles the state automatically via self.conv_id
         
     def speak(self, text):
         with self.audio_lock:
@@ -88,25 +86,31 @@ class MimicVoice:
                     img_path = mimic_vision.capture_board_image()
                     base64_img = mimic_vision.encode_image_to_base64(img_path)
 
-                    # --- MULTIMODAL BRAIN CALL ---
-                    # We add the new message to our history list for context
-                    user_msg = {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": f"User says: {user_text}"},
-                            {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_img}"}}
-                        ]
-                    }
-                    self.history.append(user_msg)
-
-                    response = self.client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=self.history,
+                    # --- MULTIMODAL BRAIN CALL (Responses API) ---
+                    # We pass the conversation ID and let the cloud handle the history.
+                    response = self.client.responses.create(
+                        model="gpt-5.4-mini",
+                        conversation=self.conv_id,
+                        # Pass your stored prompt ID here.
+                        prompt_id=config.MIMIC_PROMPT["id"], 
+                        input=[
+                            {
+                                "role": "system", 
+                                "content": f"Dynamic Context - Current Grid Mapping:\n{config.GRID_MAPPING}"
+                            },
+                            {
+                                "role": "user",
+                                "content": [
+                                    {"type": "input_text", "text": f"User says: {user_text}"},
+                                    {"type": "input_image", "image_url": f"data:image/png;base64,{base64_img}"}
+                                ]
+                            }
+                        ],
                         temperature=0.2
                     )
 
-                    ai_output = response.choices[0].message.content
-                    self.history.append({"role": "assistant", "content": ai_output})
+                    # The new API simplifies output parsing!
+                    ai_output = response.output_text
                     
                     print(f"\n--- AI Brain ---\n{ai_output}\n")
 
