@@ -4,6 +4,10 @@ import re
 import time
 from config import GRID_MAPPING
 
+print("📷 [WARMING UP CAMERA...]")
+cap = cv2.VideoCapture(1) 
+time.sleep(1.0) # Let the sensor warm up just once at startup
+
 def rotate_and_crop(image, angle, crop_box):
     """Rotates an OpenCV image around its center and crops it."""
     # 1. Rotate
@@ -27,14 +31,15 @@ def encode_image_to_base64(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def capture_board_image(save_path="current_board.png"):
-    cap = cv2.VideoCapture(8) 
-    if not cap.isOpened(): return False
-    
-    time.sleep(1.0) 
+    if not cap.isOpened(): 
+        return False
+
     ret, frame = cap.read()
     if ret:
 
-        frame= rotate_and_crop(frame, -50.0, (150, 480, 300, 600))
+        frame = rotate_and_crop(frame, -50.0, (150, 480, 300, 600))
+        
+        frame = cv2.resize(frame, (512,512))
 
         cv2.imwrite(save_path, frame)
         cap.release()

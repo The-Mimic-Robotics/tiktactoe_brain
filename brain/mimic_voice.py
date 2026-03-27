@@ -2,6 +2,7 @@ import os
 import time
 import threading
 import pygame
+import pyaudio
 import re
 import speech_recognition as sr
 import mimic_vision
@@ -14,28 +15,47 @@ class MimicVoice:
         self.sock = sock 
         self.audio_lock = threading.Lock()
         self.ptt_active = threading.Event()
+        self.player = pyaudio.PyAudio()
+
         
-        # Look ma, no self.history! 
-        # The Responses API handles the state automatically via self.conv_id
-        
+    # def speak(self, text):
+    #     with self.audio_lock:
+    #         print(f"\nMimic says: {text}")
+    #         speech_file = f"temp_voice_{int(time.time())}.mp3"
+    #         try:
+    #             with self.client.audio.speech.with_streaming_response.create(
+    #                 model="tts-1-hd", voice="fable", input=text
+    #             ) as response:
+    #                 response.stream_to_file(speech_file)
+                
+    #             pygame.mixer.init()
+    #             pygame.mixer.music.load(speech_file)
+    #             pygame.mixer.music.play()
+    #             while pygame.mixer.music.get_busy():
+    #                 pygame.time.Clock().tick(10)
+    #             pygame.mixer.quit()
+    #         finally:
+    #             if os.path.exists(speech_file): os.remove(speech_file)
+    
     def speak(self, text):
         with self.audio_lock:
             print(f"\nMimic says: {text}")
-            speech_file = f"temp_voice_{int(time.time())}.mp3"
+            
+            # --- FIX 3: Instant PyAudio Streaming ---
+            player = pyaudio.PyAudio()
+            stream = player.open(format=pyaudio.paInt16, channels=1, rate=24000, output=True)
+            
             try:
                 with self.client.audio.speech.with_streaming_response.create(
-                    model="tts-1-hd", voice="fable", input=text
+                    model="tts-1-hd", voice="nova", input=text, response_format="pcm"
                 ) as response:
-                    response.stream_to_file(speech_file)
-                
-                pygame.mixer.init()
-                pygame.mixer.music.load(speech_file)
-                pygame.mixer.music.play()
-                while pygame.mixer.music.get_busy():
-                    pygame.time.Clock().tick(10)
-                pygame.mixer.quit()
+                    for chunk in response.iter_bytes(chunk_size=1024):
+                        if chunk:
+                            stream.write(chunk)
             finally:
-                if os.path.exists(speech_file): os.remove(speech_file)
+                stream.stop_stream()
+                stream.close()
+                
 
     def fused_conversation_loop(self):
         """KEEPS YOUR WORKING COLD-START MIC LOGIC"""
