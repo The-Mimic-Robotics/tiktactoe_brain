@@ -15,10 +15,8 @@ MIMIC_PROMPT = {
 }
 
 GRID_MAPPING = """
-Here are the valid and strict board positions and their corresponding IDs:
-       Red X:
-       0: bottom left | 1: bottom middle | 2: bottom right
-       3: middle left | 4: center        | 5: middle right
-       6: top left    | 7: top middle    | 8: top right
-
+Here are the valid board positions (0-8) and their physical locations:
+0: bottom left | 1: bottom middle | 2: bottom right
+3: middle left | 4: center        | 5: middle right
+6: top left    | 7: top middle    | 8: top right
 """

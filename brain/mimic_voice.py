@@ -136,7 +136,11 @@ class MimicVoice:
 
                     # Parse output
                     move_match = re.search(r'<MOVE>(\d+)</MOVE>', ai_output)
-                    clean_speech = re.sub(r'<MOVE>.*?</MOVE>', '', ai_output).strip()
+                    
+                    # 1. Strip out the <MOVE> tag
+                    clean_speech = re.sub(r'<MOVE>.*?</MOVE>', '', ai_output)
+                    # 2. Strip out everything inside the <THINKING> tags (including linebreaks)
+                    clean_speech = re.sub(r'<THINKING>.*?</THINKING>', '', clean_speech, flags=re.DOTALL).strip()
 
                     # Act
                     if clean_speech:
