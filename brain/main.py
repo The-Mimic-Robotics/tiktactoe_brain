@@ -5,7 +5,6 @@ from pynput import keyboard
 import config
 from mimic_voice import MimicVoice
 import mimic_vision
-import utils
 
 # 1. Setup
 client = OpenAI(api_key=config.OPENAI_API_KEY)

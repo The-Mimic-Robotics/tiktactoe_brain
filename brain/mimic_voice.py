@@ -24,7 +24,7 @@ class MimicVoice:
             speech_file = f"temp_voice_{int(time.time())}.mp3"
             try:
                 with self.client.audio.speech.with_streaming_response.create(
-                    model="tts-1-hd", voice="nova", input=text
+                    model="tts-1-hd", voice="fable", input=text
                 ) as response:
                     response.stream_to_file(speech_file)
                 
@@ -92,7 +92,7 @@ class MimicVoice:
                         model="gpt-5.4-mini",
                         conversation=self.conv_id,
                         # Pass your stored prompt ID here.
-                        prompt_id=config.MIMIC_PROMPT["id"], 
+                        prompt=config.MIMIC_PROMPT, 
                         input=[
                             {
                                 "role": "system", 
