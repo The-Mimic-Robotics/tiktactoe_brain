@@ -4,9 +4,9 @@ import re
 import time
 from config import GRID_MAPPING
 
-print("📷 [WARMING UP CAMERA...]")
-cap = cv2.VideoCapture(1) 
-time.sleep(1.0) # Let the sensor warm up just once at startup
+CAMERA_PATH = "/dev/v4l/by-id/usb-Jieli_Technology_USB_Composite_Device-video-index0"
+
+
 
 def rotate_and_crop(image, angle, crop_box):
     """Rotates an OpenCV image around its center and crops it."""
@@ -31,20 +31,42 @@ def encode_image_to_base64(image_path):
         return base64.b64encode(image_file.read()).decode('utf-8')
 
 def capture_board_image(save_path="current_board.png"):
+    print("📷 [WARMING UP CAMERA...]")
+    cap = cv2.VideoCapture(CAMERA_PATH, cv2.CAP_V4L2) 
+
     if not cap.isOpened(): 
+        print("⚠️ [CAMERA ERROR]: CAMERA HARDWARE NOT FOUND OR BUSY.")
         return False
 
-    ret, frame = cap.read()
-    if ret:
-
-        frame = rotate_and_crop(frame, -50.0, (150, 480, 300, 600))
+    try:
+        # Minimum warmup: sleep or grab frames
+        time.sleep(0.3) 
         
-        frame = cv2.resize(frame, (512,512))
+        # Flush the buffer to get a fresh frame
+        for _ in range(5):
+            cap.grab()
+
+        ret, frame = cap.read()
+
+        if not ret:
+            print("⚠️ [CAMERA ERROR]: Unable to capture image.")
+            cap.release() # Release if read fails
+            return None
+
+        # Processing logic
+        frame = rotate_and_crop(frame, -70.0, (200, 480, 200, 500))
+        frame = cv2.resize(frame, (512, 512))
 
         cv2.imwrite(save_path, frame)
+        print(f"📸 [CAMERA] Captured and processed")
+        
+        # Release and return path
         cap.release()
         return save_path
-    cap.release()
-    return None
 
-
+    except Exception as e:
+        print(f"⚠️ [IMAGE PROCESSING ERROR]: {e}")
+        # Ensure we release the camera even if processing crashes
+        if cap.isOpened():
+            cap.release()
+        return None
