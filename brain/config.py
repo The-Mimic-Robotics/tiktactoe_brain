@@ -11,7 +11,7 @@ TTS_UDP_PORT = 5006
 # --- Game Logic ---
 MIMIC_PROMPT = {
     "id": "pmpt_69b5a72f3b8c819491ad004531919a9b05f7f92fd2ab1d24",
-    "version": "2"
+    "version": "3"
 }
 
 GRID_MAPPING = """
